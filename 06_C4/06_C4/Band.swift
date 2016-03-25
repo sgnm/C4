@@ -21,24 +21,59 @@ public class Band: Rectangle {
     
     var rotationAnimation: ViewAnimation?
     
+    let customColor: [Color] = [Color(red: 0.0/255.0, green: 160.0/255.0, blue: 233.0/255.0, alpha: 1.0),
+                                Color(red: 0.0/255.0, green: 120.0/255.0, blue: 232.0/255.0, alpha: 1.0),
+                                Color(red: 0.0/255.0, green: 197.0/255.0, blue: 232.0/255.0, alpha: 1.0)]
+    
+    //sound
+    let deleteSound = AudioPlayer("delete.mp3")
+    let createLineSound = AudioPlayer("createLine.mp3")
+    
     public func setupIn(canvas: View) {
         //sets up the shape
         self.canvas = canvas
         strokeColor = C4Blue
+//        strokeColor = Color(red: 0.0/233.0, green: 0.271, blue: 1.0, alpha: 1.0)
+        var randInt = Int(arc4random_uniform(UInt32(customColor.count)))
+        strokeColor = customColor[randInt]
+        
         fillColor = C4Grey
         corner = Size()
         
-        addTaps()
-        addPan()
-        addSwipes()
+        addGesture()
     }
     
     func addRotation() {
         //rotates the band
+        rotationGesture = addRotationGestureRecognizer { rotation, velocity, state in
+            switch state {
+            case .Began:
+                ShapeLayer.disableActions = true
+            case .Changed:
+                self.rotation = rotation
+                if abs(velocity) >= 10 {
+                    self.rotationGesture?.enabled = false
+                    self.createRotationAnimation(velocity / 10.0)
+                }
+            case .Ended:
+                ShapeLayer.disableActions = false
+            default:
+                _ = ""
+            }
+        }
     }
     
     func createRotationAnimation(multiplier: Double) {
         //animates a the rotation of the band
+        ShapeLayer.disableActions = false
+        let Θ = M_PI * 2.0 * (multiplier < 0.0 ? -1.0 : 1.0)
+        
+        let a = ViewAnimation(duration: 4.0 / abs(multiplier)) {
+            self.rotation += Θ
+        }
+        a.repeats = true
+        a.curve = .Linear
+        a.animate()
     }
     
     func animateLine(line: Line, to target: Point) {
@@ -91,8 +126,12 @@ public class Band: Rectangle {
         let line = Line(points)
         line.lineCap = .Butt
         line.interactionEnabled = false
-        line.lineWidth = w
-        line.strokeColor = C4Blue
+        line.lineWidth = w - (Double)(arc4random_uniform(10))
+//        line.strokeColor = C4Blue
+        var randInt = Int(arc4random_uniform(UInt32(customColor.count)))
+        line.strokeColor = customColor[randInt]
+        
+        createLineSound?.play()
         return line
     }
     
@@ -104,6 +143,7 @@ public class Band: Rectangle {
             let a = ViewAnimation(duration: 0.25) {
                 self.transform.scale(0.1, 0.1)
                 self.opacity = 0.0
+                self.deleteSound?.play()
             }
             a.addCompletionObserver {
                 self.removeFromSuperview()
@@ -152,5 +192,12 @@ public class Band: Rectangle {
             }
         }
         lp.minimumPressDuration = 0.1
+    }
+    
+    func addGesture(){
+        addTaps()
+        addPan()
+        addSwipes()
+        addRotation()
     }
 }

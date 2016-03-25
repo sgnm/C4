@@ -15,9 +15,15 @@ class WorkSpace: CanvasController {
     //The gesture to initiate recording, we need a reference to enable / disable dynamically
     var startRecording: UILongPressGestureRecognizer?
     
+    //sound
+    let player = AudioPlayer("Loop.aif")
+    let createSound = AudioPlayer("create.mp3")
+    
     override func setup() {
         //initializes the app
         canvasLongPress()
+        player?.loops = true
+        player?.play()
     }
     
     func createBand(center: Point, displacement: Vector) -> Band {
@@ -41,6 +47,7 @@ class WorkSpace: CanvasController {
                 position = center
                 currentBand = self.createBand(position, displacement: Vector())
                 self.canvas.add(currentBand)
+                self.createSound?.play()
             case .Changed:
                 let dxdy = Vector(center) - Vector(position)
                 let newBand = self.createBand(position, displacement: dxdy)
